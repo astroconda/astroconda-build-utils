@@ -1,0 +1,136 @@
+#!/usr/bin/env python
+#
+# Usage: ur-genhelp pkgname
+# - The package should already have been defined in extern.pkg, otherwise
+#   IRAF can't find it.
+#
+# Instead of trying to get a list of IRAF package definitions for the
+# current variant and normalize them all, we now call this script (from
+# build.iraf_package) to update one specified package at a time.
+# Although the generated database files contain some hard-wired paths, in
+# practice the databases can be moved and still work without modification,
+# so they only need generating once, at compile time.
+
+import sys, os, os.path
+
+# Get the package name argument:
+if len(sys.argv) == 2:
+    pkgname = sys.argv[1]
+else:
+    sys.exit('Usage: make_helpdb pkgname')
+
+# Before importing iraf, we must be running in an IRAF home directory with a
+# login.cl etc. The user may not have one already, so unless the current
+# directory has a login.cl, we create a temporary IRAF directory here. This
+# script will be most efficient if run from an existing IRAF directory, to
+# avoid setting one up for each invocation/pkg here, but this only adds ~3s.
+if not os.access('login.cl', os.R_OK):
+    import tempfile, shutil, subprocess, atexit
+    tmpdir = tempfile.mkdtemp(prefix='tmp_iraf_')       # makes a dir in /tmp
+    def cleantmp():
+        # print("Deleting "+tmpdir)
+        shutil.rmtree(tmpdir)
+    atexit.register(cleantmp)               # clean up temp dir automatically
+    os.chdir(tmpdir)
+    subprocess.call('echo xterm | mkiraf > /dev/null', shell=True)    # setup
+    os.mkdir('pyraf') # else pyraf takes time to generate this & outputs text
+
+# Functions we need for working with IRAF tasks & definitions:
+os.environ['PYRAF_NO_DISPLAY'] = 'please'   # Avoid errors about X display
+import pyraf.iraffunctions 
+import stsci.tools.fileutil
+import stsci.tools.irafglobals as irafglobals
+
+# This is how you load iraf packages.
+from pyraf import iraf
+from iraf import stsdas
+from iraf import softools
+
+
+# Find the real directory name where a package lives (this will find
+# sub-packages only once the parent package has been loaded into the current
+# Python session, eg. with iraf.<pkgname>.run(), but for building help we
+# are normally only concerned with top-level packages that are already
+# defined when PyRAF/IRAF is started).
+#
+def pkgname_to_dir(pkgname) :
+
+    # treat iraf$lib as a special case because it doesn't show up in
+    # PyRAF's list of packages but its help still needs compiling
+    if pkgname == 'iraf':
+        s = 'iraf$'
+        
+    else:
+        # here is the object that describes the package
+        p =  pyraf.iraffunctions._pkgs[pkgname]
+
+        # get the full package name if IRAF matched an abbreviation
+        pkgname = p.getName()
+
+        # here is the name of the .cl file
+        s = p.getFilename()
+
+    # turn the iraf-like filename into a normal filename
+    # (if it is already a normal filename, it comes through unchanged)
+    s = stsci.tools.fileutil.osfn(s)
+
+    # get just the directory part
+    s = os.path.dirname(s)
+
+    # these are the full package name & directory where the package is
+    return pkgname, s
+
+
+# We could either 1. make a central apropos database (eg. per variant) or 2.
+# make one database per package and set the aproposdb environment variable
+# to a list of the individual databases, the same as for helpdb. Pick the
+# latter for consistency with helpdb and so we only have to generate each
+# database when compiling the corresponding package, rather than regenerating
+# a common database with ur-normalize whenever something changes. We then
+# append each package's path to aproposdb in extern.pkg, as is standard for
+# the help.
+def mkapropos(pkgname):
+
+    print("\nMake apropos.db for package %s" % pkgname)
+
+    # Call the STSDAS version of the IRAF mkapropos task to make the
+    # database for this package:
+    try:
+        iraf.mkapropos(pkglist=pkgname, helpdir='lib/root.hd', \
+                       aproposdb=pkgname+'$lib/apropos.db', verbose=0)
+    except irafglobals.IrafError:
+        sys.exit('ur-genhelp: error running mkapropos for '+pkgname)
+
+
+# Use IRAF to compile the help database for this package:
+def mkhelpdb(pkgname) :
+
+    print("\nMake helpdb for package %s" % pkgname)
+
+    # Call mkhelpdb from IRAF's softools:
+    try:
+        iraf.mkhelpdb(helpdir = pkgname+'$lib/root.hd',
+                      helpdb = pkgname + '$lib/helpdb.mip', verbose=0)
+    except irafglobals.IrafError:
+        sys.exit('ur-genhelp: error running mkhelpdb for '+pkgname)
+
+
+
+# Check that the pkg$lib directory is actually defined/accessible:
+try:
+    pkgname, pkgdir = pkgname_to_dir(pkgname)
+except:
+    sys.exit('ur-genhelp: error: path to package %s not found/defined' \
+             % pkgname)
+
+pkgdir = pkgdir + '/lib'
+
+if not os.access(pkgdir, os.W_OK):
+    sys.exit('ur-genhelp: error: path %s not found or isn\'t writeable' \
+             % pkgdir)
+
+
+# Call IRAF to build the databases:
+mkhelpdb(pkgname)
+mkapropos(pkgname)
+
