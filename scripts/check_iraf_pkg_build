@@ -1,0 +1,141 @@
+#!/bin/sh
+
+# Attempt to determine the success or failure of an IRAF package build (since
+# mkpkg does not report a useful exit status) by checking the log for any
+# unexpected patterns (assumed to be errors) and confirming whether all the
+# binaries listed in an optional package manifest have been created.
+#
+# Status: 0 success
+#         1 invocation error
+#         2 probable error messages in log
+#         4 build incomplete with respect to manifest
+#         6 both of the above
+
+log_name="build_log"
+err_log_name="build_log.errors"
+manifest_name="ur_manifest"
+pkg_patt_name="ur_mkpkg_patterns"
+
+usage="Usage: check_iraf_pkg_build PATH"
+
+# Parse argument(s):
+st=1
+unset pkg_path
+while [ "$1" != "" ]; do
+    case "$1" in
+        -h)
+            st=0; pkg_path=""
+            break
+            ;;
+        -*)
+            st=1
+            ;;
+        *)
+            if [ "$pkg_path" ]; then
+                st=1
+            else
+		st=0; pkg_path=$1
+            fi
+	    ;;
+    esac
+    shift
+done
+
+if [ $st != 0 -o -z "$pkg_path" ]; then
+    echo "$usage" >&2
+    exit $st
+fi
+
+# Add a trailing slash if needed (as per IRAF custom):
+pkg_path=`echo $pkg_path | sed -e 's|/*$|/|'`
+
+# Make sure the specified path is readable:
+if [ ! -d "$pkg_path" -o ! -r "$pkg_path" ]; then
+    echo "ERROR: cannot read dir: $pkg_path" >&2
+    exit 1
+fi
+
+# Make sure we can find a package build log and a package-specific list of
+# patterns to be ignored within it:
+bld_log="${pkg_path}${log_name}"
+if [ ! -r "$bld_log" ]; then
+    echo "ERROR: cannot read $bld_log" >&2
+    st=1
+fi
+pkg_patterns="${pkg_path}${pkg_patt_name}"
+if [ ! -r "$pkg_patterns" ]; then
+    echo "ERROR: cannot read $pkg_patterns" >&2
+    st=1
+fi
+
+# Check for an optional manifest:
+manifest="${pkg_path}${manifest_name}"
+if [ ! -r "$manifest" ]; then
+    echo "Warning: no manifest in $pkg_path" >&2
+    manifest=""
+fi
+
+# Exit due to missing files above:
+[ $st != 0 ] && exit 1
+
+# The environment must already be configured for running/building IRAF:
+if [ -z "$iraf" ]; then
+    echo "ERROR: must configure \$iraf first (eg. AstroConda"\
+	 "\"source activate iraf\")" >&2
+    exit 1
+fi
+
+# Add a trailing slash if needed:
+iraf=`echo $iraf | sed -e 's|/*$|/|'`
+
+# Check for master list of expected IRAF build log patterns (used in addition
+# to the package-specific list):
+iraf_patterns="$iraf/ur/mkpkg_patterns"
+if [ ! -r "$iraf_patterns" ]; then
+    echo "ERROR: missing $iraf_patterns" >&2
+    exit 1
+fi
+
+# Look for unexpected string patterns in the log file (NB. grep returns 1 when
+# all lines are successfully filtered out):
+err_log="${pkg_path}${err_log_name}"
+if tr -d '\015' < "$bld_log" | egrep -v -f "$iraf_patterns" -f "$pkg_patterns" > "$err_log"; then
+    st=2
+    echo "ERROR: unexpected build messages in $err_log" >&2
+else
+    rm -f "$err_log"
+fi
+
+# Check the existence of each file listed in the manifest. Currently there is
+# no support for architecture-specific manifests (as we had in Ureka), since we
+# haven't actually used any to date.
+if [ "$manifest" ]; then
+
+    nmissing=0
+    lmissing=""
+
+    exec < $manifest
+    while read line
+    do	
+        case "$line" in
+            '#'*|'')
+                continue
+                ;;
+            *)
+                if [ ! -r "${pkg_path}${line}" ]; then
+                    nmissing=$((nmissing+1))
+                    lmissing="${lmissing}  ${line}"$'\n'
+                fi
+                ;;
+        esac
+    done
+
+    if [ $nmissing -gt 0 ]; then
+       echo "ERROR: $nmissing expected file(s) missing after installation:" >& 2
+       echo "$lmissing" >& 2
+       st=$((st+4))
+    fi
+fi
+
+exit $st
+
