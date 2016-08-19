@@ -59,12 +59,20 @@ with open(template_path, 'r') as template_file:
 # the others. The template ur_extern.pkg files must not contain backslashes.
 
 replacements = OrderedDict((
-    ('spec_nospace', (r'([][.^${}\|*?])',      r'\\\1')),
-    ('spec_space',   (r'[ \t]*([=+()])[ \t]*', r'[ \t]*\\\1[ \t]*')),
-    ('extra_space',  (r'[ \t]+',               r'[ \t]+')),
-    ('end_space',    (r'(^|$)',                r'[ \t]*')),
-    ('path_sub',     (path_sub,                r'.*')),
+    ('special_nospace', (r'([][.^${}\|*?])',       r'\\\1')),
+    ('special_sp_end',  (r'[ \t]*([=+()])[ \t]*$', r'[ \t]*\\\1')),
+    ('special_space',   (r'[ \t]*([=+()])[ \t]*',  r'[ \t]*\\\1[ \t]*')),
+    ('lead_space',      (r'^[ \t]+',               r'')),
+    ('end_space',       (r'[ \t]+$',               r'')),
+    ('extra_space',     (r'[ \t]+',                r'[ \t]+')),
+    ('line_space',      (r'\s*\n\s*',              r'\s*\n\s*')),  # see below
+    ('path_sub',        (path_sub,                 r'.*')),
 ))
+
+# Note that ^ and $ only match in conjunction with their adjoining character,
+# which, unlike the \n above, can get consumed by a prior pattern. Also,
+# certain other combinations of \s and other space seem to cause "catastrophic
+# backtracking" when there's no match, which can take 11 minutes!
 
 # Concatenate individual expressions for replacement, so they can be done
 # simultaneously on the original buffer (otherwise they trip each other up):
