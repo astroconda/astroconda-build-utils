@@ -1,0 +1,7 @@
+# Some common IRAF-package name definitions for the sh scripts in this dir.
+
+log_name="build_log"
+err_log_name="build_log.errors"
+manifest_name="ur_manifest"
+pkg_patt_name="ur_mkpkg_patterns"
+

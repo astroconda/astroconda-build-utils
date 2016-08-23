@@ -4,7 +4,7 @@
 scripts="update_extern_pkg"
 
 # Work in the directory where this script and those to be updated live:
-cd `dirname $0` || exit 1  # (should never fail if this script can be executed)
+cd `dirname "$0"` || exit 1 # (should never fail if this script can be executed)
 
 # Put temporary copies in a tmp/ directory in the conda environment or /tmp/:
 tmp="$PREFIX/tmp"

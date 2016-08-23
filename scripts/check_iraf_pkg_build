@@ -11,12 +11,10 @@
 #         4 build incomplete with respect to manifest
 #         6 both of the above
 
-log_name="build_log"
-err_log_name="build_log.errors"
-manifest_name="ur_manifest"
-pkg_patt_name="ur_mkpkg_patterns"
-
 usage="Usage: check_iraf_pkg_build PATH"
+
+# Source some common IRAF package defs (log_name etc.) from the same dir:
+. `dirname "$0"`/iraf_defs
 
 # Parse argument(s):
 st=1
@@ -47,7 +45,7 @@ if [ $st != 0 -o -z "$pkg_path" ]; then
 fi
 
 # Add a trailing slash if needed (as per IRAF custom):
-pkg_path=`echo $pkg_path | sed -e 's|/*$|/|'`
+pkg_path=`echo "$pkg_path" | sed -e 's|/*$|/|'`
 
 # Make sure the specified path is readable:
 if [ ! -d "$pkg_path" -o ! -r "$pkg_path" ]; then
