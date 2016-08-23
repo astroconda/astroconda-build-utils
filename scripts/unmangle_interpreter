@@ -28,7 +28,7 @@ for script in $scripts; do
 
     tmpscript="$tmp/$script"
 
-    if ! sed -e 's|#\!.*/python$|#\!/usr/bin/python|' "$script" > "$tmpscript"
+    if ! sed -e 's|#\!.*/python|#\!/usr/bin/python|' "$script" > "$tmpscript"
     then
         echo "cannot write $tmpscript" >&2
         exit 1
