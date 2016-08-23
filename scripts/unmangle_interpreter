@@ -1,0 +1,48 @@
+#!/bin/sh
+
+# Names of the script(s) to be updated in the same directory this is run from:
+scripts="update_extern_pkg"
+
+# Work in the directory where this script and those to be updated live:
+cd `dirname $0` || exit 1  # (should never fail if this script can be executed)
+
+# Put temporary copies in a tmp/ directory in the conda environment or /tmp/:
+tmp="$PREFIX/tmp"
+if [ -d "$tmp" ]; then
+    remove_tmp=0
+else
+    if ! mkdir "$tmp"; then
+	echo "failed to create $tmp" >&2
+        exit 1
+    fi
+    remove_tmp=1
+fi
+
+# Update each named script in turn:
+for script in $scripts; do
+
+    if [ ! -r "$script" ]; then
+	echo "no such script: $script" >&2
+        exit 1	
+    fi
+
+    tmpscript="$tmp/$script"
+
+    if ! sed -e 's|#\!.*/python$|#\!/usr/bin/python|' "$script" > "$tmpscript"
+    then
+        echo "cannot write $tmpscript" >&2
+        exit 1
+    fi
+
+    chmod 755 "$tmpscript"
+
+    if ! mv -f "$tmpscript" "$script"; then
+        echo "failed to replace $script" >&2
+        exit 1
+    fi
+
+done
+
+# Clean up:
+[ $remove_tmp == 1 ] && rmdir "$tmp"
+
