@@ -1,0 +1,73 @@
+#!/bin/sh
+
+# Copy external IRAF package source from the current working directory to
+# $PREFIX/iraf_extern/package_name, add any configuration files from the conda
+# recipe (eg. ur_extern.pkg) and update extern.pkg accordingly. This is
+# normally done *before* building the package in place, since it (and its
+# dependencies) already have to be defined in IRAF at build time and the source
+# gets distributed anyway.
+#
+# This script is used by the AstroConda build process; users wanting pre-built
+# AstroConda IRAF packages should instead install them with "conda install" or
+# "conda create".
+
+# Source some common IRAF package defs (and later other scripts) from the
+# same directory as this one:
+script_dir=`dirname "$0"`
+script_dir=`cd "$script_dir"; pwd`  # canonical version
+. "$script_dir/iraf_defs"
+
+if [ -n "$1" -o -z "$PREFIX" -o -z "$RECIPE_DIR" -o -z "$PKG_NAME" ]; then
+    echo "ERROR: `basename "$0"` should be called via \"conda build\""     >&2
+    echo "       (with no arguments), to define the necessary environment" >&2
+    exit 1
+fi
+
+# Create any new dirs & files with the expected permissions:
+umask 022
+
+# Strip any "iraf." from the Conda package name, to get the IRAF equivalent
+# and determine the installation path accordingly:
+pkg_name=`echo "$PKG_NAME" | sed -e 's|^iraf[.]||'`
+pkg_path="${PREFIX}/${extern_dir}/${pkg_name}"
+
+# Create the destination directory, if needed:
+if ! mkdir -p "$pkg_path"; then
+    echo "ERROR: failed to create $pkg_path" >&2
+    exit 1
+fi
+
+# Ensure the destination is writeable (a bit redundant but clearer than the
+# subsequent message for this case):
+if [ ! -w "$pkg_path" ]; then
+    echo "ERROR: cannot write to $pkg_path" >&2
+    exit 1
+fi
+
+# Copy the package source (CWD contents) to its destination:
+if ! tar cf - ./ | (cd "$pkg_path" && tar xf -); then
+    echo "ERROR: failed to copy source to $pkg_path" >&2
+    exit 1
+fi
+
+# Add package configuration files from the recipe (any source patches should
+# have already been added separately by conda):
+for file_name in $ac_iraf_files; do
+    file_path="${RECIPE_DIR}/${file_name}"
+    if [ -r "$file_path" ]; then
+        if ! cp -p "$file_path" "$pkg_path"/; then
+            echo "ERROR: failed to copy $file_name to $pkg_path" >&2
+            exit 1
+        fi
+    fi
+done
+
+# Define the new package in the (temporary build-time) extern.pkg:
+if ! "$script_dir/update_extern_pkg" "$PREFIX" "$pkg_name"; then
+    echo "ERROR: failed to update $extern_pkg" >&2
+    exit 1
+fi
+
+# Ensure status=0 on reaching the end (not some left-over condition value).
+exit 0
+
