@@ -1,7 +1,19 @@
 # Some common IRAF-package name definitions for the sh scripts in this dir.
+# (also see separate defs. in the python scripts for now)
+
+extern_dir="iraf_extern"
+extern_pkg="extern.pkg"
+
+pkg_extpkg="ur_extern.pkg"
+pkg_manifest="ur_manifest"
+pkg_patterns="ur_mkpkg_patterns"
+pkg_mkpkg_cmd="ur_mkpkg_cmd"
+pkg_mkhelp_cmd="ur_mkhelp_cmd"
 
 log_name="build_log"
 err_log_name="build_log.errors"
-manifest_name="ur_manifest"
-pkg_patt_name="ur_mkpkg_patterns"
+
+# Files to copy from the recipe to the build:
+ac_iraf_files="$pkg_extpkg $pkg_manifest $pkg_patterns $pkg_mkpkg_cmd\
+	       $pkg_mkhelp_cmd"
 

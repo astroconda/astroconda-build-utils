@@ -60,14 +60,14 @@ if [ ! -r "$bld_log" ]; then
     echo "ERROR: cannot read $bld_log" >&2
     st=1
 fi
-pkg_patterns="${pkg_path}${pkg_patt_name}"
+pkg_patterns="${pkg_path}${pkg_patterns}"
 if [ ! -r "$pkg_patterns" ]; then
     echo "ERROR: cannot read $pkg_patterns" >&2
     st=1
 fi
 
 # Check for an optional manifest:
-manifest="${pkg_path}${manifest_name}"
+manifest="${pkg_path}${pkg_manifest}"
 if [ ! -r "$manifest" ]; then
     echo "Warning: no manifest in $pkg_path" >&2
     manifest=""
