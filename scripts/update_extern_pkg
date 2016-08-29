@@ -98,8 +98,17 @@ tempbuf = re.sub(path_sub, os.path.join(pkg_path, ''), tempbuf)  # trailing /
 # print(template_re)  # debug
 
 # Define expected "keep" line(s) at the end of extern.pkg:
-keep_re = '((?:^[ \t]*keep\s*)+\Z)'
-keep_str = '\nkeep\n'
+keep_re = '(?:^[ \t]*(?:;\s*)*keep\s*)+\Z'
+keep_str = ';\n\nkeep\n'
+
+# Temporarily remove any "keep" from the end of the buffer, before appending to
+# it (and replacing with ";\n\nkeep\n", to avoid a CL parser bug):
+match = re.search(keep_re, buffer, flags=re.M)
+if match:
+    buffer = buffer[:match.start()]
+
+# Make sure that what goes before the "keep" ends with a new line:
+buffer = re.sub('\n?\Z', '\n', buffer, flags=re.M)
 
 # Find the last entry in extern.pkg (if any) that matches the template:
 match = None
@@ -130,22 +139,18 @@ if match:
                                      buffer[match.end():].lstrip())
         match = None
 
-# Replace the applicable entry with the template-based version (and make sure
-# there's a "keep" at the end of the file):
+# Replace the applicable entry with the template-based version:
 if match:
     buffer = buffer[:match.start()] + tempbuf + buffer[match.end():]
-    if not re.search(keep_re, buffer, flags=re.M):
-        buffer += keep_str                              # add missing "keep"
 
 # If there wasn't an existing entry, or the last one wasn't based on the
-# template, put the new entry at the end (before "keep"):
+# template, put the new entry at the end:
 else:
-    match = re.search(keep_re, buffer, flags=re.M)
-    if match:
-        pos = match.start()
-        buffer = buffer[:pos] + '{0}\n\n'.format(tempbuf) + buffer[pos:]
-    else:
-        buffer += '{0}\n{1}'.format(tempbuf, keep_str)  # add missing "keep"
+    buffer += tempbuf
+
+# Restore the "keep" line at the end (along with a semicolon to avoid an IRAF
+# parser bug when the last entry ends with a curly bracket):
+buffer += keep_str
 
 # Back up the original extern.pkg:
 shutil.copy2(extpkg_path, os.path.join(path, backup))
