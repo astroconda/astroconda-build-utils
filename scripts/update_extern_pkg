@@ -146,7 +146,7 @@ if match:
 # If there wasn't an existing entry, or the last one wasn't based on the
 # template, put the new entry at the end:
 else:
-    buffer += tempbuf
+    buffer += '{0}\n\n'.format(tempbuf)
 
 # Restore the "keep" line at the end (along with a semicolon to avoid an IRAF
 # parser bug when the last entry ends with a curly bracket):
