@@ -42,7 +42,6 @@ import stsci.tools.irafglobals as irafglobals
 
 # This is how you load iraf packages.
 from pyraf import iraf
-from iraf import stsdas
 from iraf import softools
 
 
@@ -92,11 +91,11 @@ def mkapropos(pkgname):
 
     print("\nMake apropos.db for package %s" % pkgname)
 
-    # Call the STSDAS version of the IRAF mkapropos task to make the
-    # database for this package:
+    # Call the STSDAS version of the IRAF mkapropos task (now moved into
+    # softools in Ureka's core IRAF) to make the database for this package:
     try:
-        iraf.mkapropos(pkglist=pkgname, helpdir='lib/root.hd', \
-                       aproposdb=pkgname+'$lib/apropos.db', verbose=0)
+        iraf.softools.mkapropos(pkglist=pkgname, helpdir='lib/root.hd', \
+                                aproposdb=pkgname+'$lib/apropos.db', verbose=0)
     except irafglobals.IrafError:
         sys.exit('make_helpdb: error running mkapropos for '+pkgname)
 
@@ -108,8 +107,8 @@ def mkhelpdb(pkgname) :
 
     # Call mkhelpdb from IRAF's softools:
     try:
-        iraf.mkhelpdb(helpdir = pkgname+'$lib/root.hd',
-                      helpdb = pkgname + '$lib/helpdb.mip', verbose=0)
+        iraf.softools.mkhelpdb(helpdir = pkgname+'$lib/root.hd',
+                               helpdb = pkgname + '$lib/helpdb.mip', verbose=0)
     except irafglobals.IrafError:
         sys.exit('make_helpdb: error running mkhelpdb for '+pkgname)
 
