@@ -1,12 +1,11 @@
 #!/usr/bin/env python
 #
-# Usage: ur-genhelp pkgname
+# Make the help & apropos databases for an IRAF package (adapted from Ureka).
+#
+# Usage: make_helpdb pkgname
 # - The package should already have been defined in extern.pkg, otherwise
 #   IRAF can't find it.
 #
-# Instead of trying to get a list of IRAF package definitions for the
-# current variant and normalize them all, we now call this script (from
-# build.iraf_package) to update one specified package at a time.
 # Although the generated database files contain some hard-wired paths, in
 # practice the databases can be moved and still work without modification,
 # so they only need generating once, at compile time.
@@ -99,7 +98,7 @@ def mkapropos(pkgname):
         iraf.mkapropos(pkglist=pkgname, helpdir='lib/root.hd', \
                        aproposdb=pkgname+'$lib/apropos.db', verbose=0)
     except irafglobals.IrafError:
-        sys.exit('ur-genhelp: error running mkapropos for '+pkgname)
+        sys.exit('make_helpdb: error running mkapropos for '+pkgname)
 
 
 # Use IRAF to compile the help database for this package:
@@ -112,7 +111,7 @@ def mkhelpdb(pkgname) :
         iraf.mkhelpdb(helpdir = pkgname+'$lib/root.hd',
                       helpdb = pkgname + '$lib/helpdb.mip', verbose=0)
     except irafglobals.IrafError:
-        sys.exit('ur-genhelp: error running mkhelpdb for '+pkgname)
+        sys.exit('make_helpdb: error running mkhelpdb for '+pkgname)
 
 
 
@@ -120,13 +119,13 @@ def mkhelpdb(pkgname) :
 try:
     pkgname, pkgdir = pkgname_to_dir(pkgname)
 except:
-    sys.exit('ur-genhelp: error: path to package %s not found/defined' \
+    sys.exit('make_helpdb: error: path to package %s not found/defined' \
              % pkgname)
 
 pkgdir = pkgdir + '/lib'
 
 if not os.access(pkgdir, os.W_OK):
-    sys.exit('ur-genhelp: error: path %s not found or isn\'t writeable' \
+    sys.exit('make_helpdb: error: path %s not found or isn\'t writeable' \
              % pkgdir)
 
 
