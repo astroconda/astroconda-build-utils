@@ -9,11 +9,13 @@ pkg_manifest="ur_manifest"
 pkg_patterns="ur_mkpkg_patterns"
 pkg_mkpkg_cmd="ur_mkpkg_cmd"
 pkg_mkhelp_cmd="ur_mkhelp_cmd"
+pkg_omit_list="numrec_list.txt"
 
 log_name="build_log"
 err_log_name="build_log.errors"
+help_log_name="help_log"
 
-# Files to copy from the recipe to the build:
+# Files to copy from the recipe to the build (if present):
 ac_iraf_files="$pkg_extpkg $pkg_manifest $pkg_patterns $pkg_mkpkg_cmd\
-	       $pkg_mkhelp_cmd"
+	       $pkg_mkhelp_cmd $pkg_omit_list"
 

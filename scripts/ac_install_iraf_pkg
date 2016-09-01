@@ -2,24 +2,32 @@
 
 # Copy external IRAF package source from the current working directory to
 # $PREFIX/iraf_extern/package_name, add any configuration files from the conda
-# recipe (eg. ur_extern.pkg) and update extern.pkg accordingly. This is
-# normally done *before* building the package in place, since it (and its
-# dependencies) already have to be defined in IRAF at build time and the source
-# gets distributed anyway.
+# recipe (eg. ur_extern.pkg), update extern.pkg accordingly, compile the
+# package in place and remove any proprietary files. The build is done using
+# the installed copy since the package and its dependencies must already be
+# defined in IRAF at build time and IRAF packages are installed as a source
+# tree anyway.
 #
 # This script is used by the AstroConda build process; users wanting pre-built
 # AstroConda IRAF packages should instead install them with "conda install" or
 # "conda create".
 
-# Source some common IRAF package defs (and later other scripts) from the
-# same directory as this one:
+# Determine the directory this script lives in (for later use) and source some
+# common name definitions from the same place:
 script_dir=`dirname "$0"`
-script_dir=`cd "$script_dir"; pwd`  # canonical version
+script_dir=`cd "$script_dir" && pwd`  # canonical version of path
 . "$script_dir/iraf_defs"
 
+# The parameters are effectively conda build variables, which must be set here:
 if [ -n "$1" -o -z "$PREFIX" -o -z "$RECIPE_DIR" -o -z "$PKG_NAME" ]; then
     echo "ERROR: `basename "$0"` should be called via \"conda build\""     >&2
     echo "       (with no arguments), to define the necessary environment" >&2
+    exit 1
+fi
+
+# IRAF must also be defined in the environment:
+if [ -z "$iraf" -o -z "$IRAFARCH" ]; then
+    echo "ERROR: must configure IRAF environment (. setup_iraf.sh)"        >&2
     exit 1
 fi
 
@@ -68,6 +76,20 @@ if ! "$script_dir/update_extern_pkg" "$PREFIX" "$pkg_name"; then
     exit 1
 fi
 
+# Continue working in the destination directory:
+cd "$pkg_path" || exit 1  # (failure would have to be 1-off race condition...)
+
+# Remove any bin directories that aren't needed for this IRAF architecture and
+# ensure we do have those that are needed:
+rm -fr bin.*
+mkdir bin.generic "bin.$IRAFARCH"
+if [ -L bin ]; then  # apart from being safer, there is a bin/ dir in mscdb
+    rm -f bin
+    ln -s "bin.$IRAFARCH" bin
+fi
+
 # Ensure status=0 on reaching the end (not some left-over condition value).
 exit 0
+
+# This won't get picked up until checked in!
 
