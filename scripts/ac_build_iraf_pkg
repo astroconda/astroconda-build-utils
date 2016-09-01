@@ -127,7 +127,7 @@ if [ -r "$file_path" ]; then
     st=$?
 else
     # This is an IRAF convention that usually applies but doesn't always:
-    "$script_dir/make_helpdb" "$pkg_name" > "$help_log_name" 2>&1
+    "$script_dir/make_iraf_help" "$pkg_name" > "$help_log_name" 2>&1
     st=$?
 fi
 

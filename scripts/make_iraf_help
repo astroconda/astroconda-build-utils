@@ -2,7 +2,7 @@
 #
 # Make the help & apropos databases for an IRAF package (adapted from Ureka).
 #
-# Usage: make_helpdb pkgname
+# Usage: make_iraf_help pkgname
 # - The package should already have been defined in extern.pkg, otherwise
 #   IRAF can't find it.
 #
@@ -16,7 +16,7 @@ import sys, os, os.path
 if len(sys.argv) == 2:
     pkgname = sys.argv[1]
 else:
-    sys.exit('Usage: make_helpdb pkgname')
+    sys.exit('Usage: make_iraf_help pkgname')
 
 # Before importing iraf, we must be running in an IRAF home directory with a
 # login.cl etc. The user may not have one already, so unless the current
@@ -97,7 +97,7 @@ def mkapropos(pkgname):
         iraf.softools.mkapropos(pkglist=pkgname, helpdir='lib/root.hd', \
                                 aproposdb=pkgname+'$lib/apropos.db', verbose=0)
     except irafglobals.IrafError:
-        sys.exit('make_helpdb: error running mkapropos for '+pkgname)
+        sys.exit('make_iraf_help: error running mkapropos for '+pkgname)
 
 
 # Use IRAF to compile the help database for this package:
@@ -110,7 +110,7 @@ def mkhelpdb(pkgname) :
         iraf.softools.mkhelpdb(helpdir = pkgname+'$lib/root.hd',
                                helpdb = pkgname + '$lib/helpdb.mip', verbose=0)
     except irafglobals.IrafError:
-        sys.exit('make_helpdb: error running mkhelpdb for '+pkgname)
+        sys.exit('make_iraf_help: error running mkhelpdb for '+pkgname)
 
 
 
@@ -118,13 +118,13 @@ def mkhelpdb(pkgname) :
 try:
     pkgname, pkgdir = pkgname_to_dir(pkgname)
 except:
-    sys.exit('make_helpdb: error: path to package %s not found/defined' \
+    sys.exit('make_iraf_help: error: path to package %s not found/defined' \
              % pkgname)
 
 pkgdir = pkgdir + '/lib'
 
 if not os.access(pkgdir, os.W_OK):
-    sys.exit('make_helpdb: error: path %s not found or isn\'t writeable' \
+    sys.exit('make_iraf_help: error: path %s not found or isn\'t writeable' \
              % pkgdir)
 
 
