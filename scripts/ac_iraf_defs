@@ -3,6 +3,7 @@
 
 extern_dir="iraf_extern"
 extern_pkg="extern.pkg"
+extpkg_bak="extern.pkg.ac_bak"
 
 pkg_extpkg="ur_extern.pkg"
 pkg_manifest="ur_manifest"
