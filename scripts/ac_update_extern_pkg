@@ -36,6 +36,7 @@ args = parser.parse_args()
 # an iraf_extern/package/ur_extern.pkg (ie. files already installed):
 path = os.path.abspath(args.path)                     # env dir with extern.pkg
 extpkg_path = os.path.join(path, extern_pkg)          # extern.pkg path
+extbak_path = os.path.join(path, extpkg_bak)          # path to backup copy
 pkg_path = os.path.join(path, extern_dir, args.name)  # path to this IRAF pkg
 template_path = os.path.join(pkg_path, template)      # this ur_extern.pkg
 
@@ -153,9 +154,13 @@ else:
 buffer += keep_str
 
 # Back up the original extern.pkg:
-shutil.copy2(extpkg_path, os.path.join(path, extpkg_bak))
+os.rename(extpkg_path, extbak_path)
 
-# Write the modified extern.pkg:
+# Write the modified extern.pkg as a new file with the same name, otherwise
+# conda's hard linking propagates its changes to other environments!:
 with open(extpkg_path, 'w') as extpkg_file:
     extpkg_file.write(buffer)
+
+# Inherit permissions from the original copy (just as good practice):
+shutil.copymode(extbak_path, extpkg_path)
 
