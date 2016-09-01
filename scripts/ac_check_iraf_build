@@ -11,10 +11,10 @@
 #         4 build incomplete with respect to manifest
 #         6 both of the above
 
-usage="Usage: check_iraf_pkg_build PATH"
+usage="Usage: ac_check_iraf_build PATH"
 
 # Source some common IRAF package defs (log_name etc.) from the same dir:
-. `dirname "$0"`/iraf_defs
+. `dirname "$0"`/ac_iraf_defs
 
 # Parse argument(s):
 st=1

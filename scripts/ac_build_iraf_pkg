@@ -16,7 +16,7 @@
 # common name definitions from the same place:
 script_dir=`dirname "$0"`
 script_dir=`cd "$script_dir" && pwd`  # canonical version of path
-. "$script_dir/iraf_defs"
+. "$script_dir/ac_iraf_defs"
 
 # The parameters are effectively conda build variables, which must be set here:
 if [ -n "$1" -o -z "$PREFIX" -o -z "$RECIPE_DIR" -o -z "$PKG_NAME" ]; then
@@ -75,7 +75,7 @@ for file_name in $ac_iraf_files; do
 done
 
 # Define the new package in the (temporary build-time) extern.pkg:
-if ! "$script_dir/update_extern_pkg" "$PREFIX" "$pkg_name"; then
+if ! "$script_dir/ac_update_extern_pkg" "$PREFIX" "$pkg_name"; then
     echo "ERROR: failed to update $extern_pkg" >&2
     exit 1
 fi
