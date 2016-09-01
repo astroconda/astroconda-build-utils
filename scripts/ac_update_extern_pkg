@@ -15,7 +15,7 @@ from collections import OrderedDict
 
 # AstroConda naming conventions:
 extern_pkg    = 'extern.pkg'
-backup        = 'extern.pkg.ac_bak'  # avoid possible collision with user .bak
+extpkg_bak    = 'extern.pkg.ac_bak'  # avoid possible collision with user .bak
 extern_dir    = 'iraf_extern'
 template      = 'ur_extern.pkg'
 path_sub      = 'UR_VDIR'            # a regexp
@@ -153,7 +153,7 @@ else:
 buffer += keep_str
 
 # Back up the original extern.pkg:
-shutil.copy2(extpkg_path, os.path.join(path, backup))
+shutil.copy2(extpkg_path, os.path.join(path, extpkg_bak))
 
 # Write the modified extern.pkg:
 with open(extpkg_path, 'w') as extpkg_file:

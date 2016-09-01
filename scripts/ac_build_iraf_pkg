@@ -147,6 +147,10 @@ if [ -r "$pkg_omit_list" ]; then
     fi
 fi
 
+# Remove extern.pkg from the build variant, so it doesn't end up in the
+# tarball and overwrite the existing one(s):
+rm -f "${PREFIX}/${extern_pkg}" "${PREFIX}/${extpkg_bak}"
+
 # Ensure status=0 on reaching the end (& not left over from some condition).
 exit 0
 
