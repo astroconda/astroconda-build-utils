@@ -114,7 +114,7 @@ if [ $st -ne 0 ]; then
 fi
 
 # Check that the build appears to have succeeded:
-if ! "$script_dir/check_iraf_pkg_build" ./ ; then
+if ! "$script_dir/ac_check_iraf_build" ./ ; then
     echo "ERROR: package build apparently failed" >&2
     exit 1
 fi
