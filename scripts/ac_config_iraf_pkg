@@ -1,0 +1,30 @@
+# A post-install script for AstroConda IRAF packages (to update extern.pkg),
+# which gets executed automatically when doing "conda install".
+
+script_dir=`dirname "$0"`
+name=$1
+
+if [ -z "$1" -o -n "$2" ]; then
+    echo "Usage: `basename "$0"` NAME"
+    exit 1
+fi
+
+if [ -z "$PREFIX" -o ! -d "$PREFIX" ]; then
+    echo "ERROR: \$PREFIX not set/found (script should be invoked by"\
+         "\"conda install\")" >&2
+    exit 1
+fi
+
+# The Python script for updating extern.pkg must be invoked in the following
+# way because conda insists on mangling its interpreter path and does not put
+# it back to something functional before the post install step happens :-(.
+# Both the LSB and MacOS define Python in /usr/bin as standard (used to avoid
+# dependence on the state of the Anaconda environment during installation).
+
+if /usr/bin/python "$script_dir/ac_update_extern_pkg" "$PREFIX" $name; then
+    echo "Updated extern.pkg file" >> "$PREFIX/.messages.txt"
+else
+    echo "ERROR: failed to update extern.pkg" >&2
+    exit 1
+fi
+
