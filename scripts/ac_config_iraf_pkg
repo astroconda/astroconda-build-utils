@@ -1,3 +1,5 @@
+#!/bin/sh
+#
 # A post-install script for AstroConda IRAF packages (to update extern.pkg),
 # which gets executed automatically when doing "conda install".
 
