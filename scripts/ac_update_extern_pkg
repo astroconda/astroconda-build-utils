@@ -1,10 +1,10 @@
-#!/usr/bin/python
-#
 # Copyright(c) 2016 Association of Universities for Research in Astronomy, Inc.
 #
-# This script uses the OS Python to avoid Conda relocation/dependency problems
-# (since it is run before package installation is complete). Both the LSB and
-# MacOS define Python in /usr/bin as standard.
+# This script uses the OS Python (both the LSB and MacOS define Python in
+# /usr/bin as standard), avoiding dependence on the installation that is still
+# in progress when it gets run. It is not made executable because conda insists
+# on changing any Python interpreter path to $PREFIX/bin/python, which does not
+# always exist; it can instead be invoked via ac_config_iraf_pkg.
 
 import argparse
 import os, os.path
