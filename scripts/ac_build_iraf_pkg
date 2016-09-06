@@ -75,7 +75,8 @@ for file_name in $ac_iraf_files; do
 done
 
 # Define the new package in the (temporary build-time) extern.pkg:
-if ! "$script_dir/ac_update_extern_pkg" "$PREFIX" "$pkg_name"; then
+if ! /usr/bin/python "$script_dir/ac_update_extern_pkg" "$PREFIX" "$pkg_name"
+then
     echo "ERROR: failed to update $extern_pkg" >&2
     exit 1
 fi
