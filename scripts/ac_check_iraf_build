@@ -1,5 +1,7 @@
 #!/bin/sh
 
+# Copyright(c) 2010-2016 Association of Universities for Research in Astronomy, Inc.
+
 # Attempt to determine the success or failure of an IRAF package build (since
 # mkpkg does not report a useful exit status) by checking the log for any
 # unexpected patterns (assumed to be errors) and confirming whether all the

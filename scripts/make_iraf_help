@@ -1,5 +1,7 @@
 #!/usr/bin/env python
-#
+
+# Copyright(c) 2010-2016 Association of Universities for Research in Astronomy, Inc.
+
 # Make the help & apropos databases for an IRAF package (adapted from Ureka).
 #
 # Usage: make_iraf_help pkgname

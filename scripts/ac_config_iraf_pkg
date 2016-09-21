@@ -1,5 +1,7 @@
 #!/bin/sh
-#
+
+# Copyright(c) 2016 Association of Universities for Research in Astronomy, Inc.
+
 # A post-install script for AstroConda IRAF packages (to update extern.pkg),
 # which gets executed automatically when doing "conda install", but can also be
 # run by users to restore broken definitions.

@@ -1,5 +1,5 @@
 # Copyright(c) 2016 Association of Universities for Research in Astronomy, Inc.
-#
+
 # This script uses the OS Python (both the LSB and MacOS define Python in
 # /usr/bin as standard), avoiding dependence on the installation that is still
 # in progress when it gets run. It is not made executable because conda insists

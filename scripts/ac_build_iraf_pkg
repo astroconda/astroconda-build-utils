@@ -1,5 +1,7 @@
 #!/bin/sh
 
+# Copyright(c) 2010-2016 Association of Universities for Research in Astronomy, Inc.
+
 # Copy external IRAF package source from the current working directory to
 # $PREFIX/iraf_extern/package_name, add any configuration files from the conda
 # recipe (eg. ur_extern.pkg), update extern.pkg accordingly, compile the
