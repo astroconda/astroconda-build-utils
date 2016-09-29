@@ -6,15 +6,19 @@
 # To get this working:
 # - Define an "astroconda-source" alias for the host where the local tarballs
 #   are located.
+# - Start this script in the directory containing the source tarballs.
+#
+# The original SSL version also required these things, but I've reverted to
+# using plain HTTP for now, commenting out the SSL bits:
 # - Place an SSL certificate file, "astroconda.pem", in the same directory as
 #   the source tarballs.
-# - Start this script in the directory containing the source tarballs.
-# - Point each client build machine to a copy of the SSL certificate like so:
-#     conda config --set ssl_verify /path/to/astroconda.pem.
+# - Point each client build machine to a copy of an SSL certificate store:
+#       conda config --set ssl_verify /path/to/file.crt (not properly tested)
+#    or conda config --set ssl_verify false (less safe)
 
 import BaseHTTPServer
 import SimpleHTTPServer
-import ssl
+# import ssl
 
 # It seems common practice to use port 4443 for unprivileged HTTPS services but
 # 4440 is unassigned and less likely to conflict with any other HTTPS service:
@@ -24,11 +28,11 @@ httpd = BaseHTTPServer.HTTPServer(
     ('', port), SimpleHTTPServer.SimpleHTTPRequestHandler
 )
 
-httpd.socket = ssl.wrap_socket(
-    httpd.socket,
-    certfile='astroconda.pem',    # cert. kept in CWD with source tarballs
-    server_side=True
-)
+# httpd.socket = ssl.wrap_socket(
+#     httpd.socket,
+#     certfile='astroconda.pem',    # cert. kept in CWD with source tarballs
+#     server_side=True
+# )
 
 httpd.serve_forever()
 
