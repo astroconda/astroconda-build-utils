@@ -95,8 +95,9 @@ if [ -L bin ]; then  # apart from being safer, there is a bin/ dir in mscdb
     ln -s "bin.$IRAFARCH" bin
 fi
 
-# Enable compilation with debugging symbols (from the STScI IRAF "make_all"):
-export XC_LFLAGS="-g $XC_LFLAGS"
+# Enable compilation with debugging symbols (from the STScI IRAF "make_all";
+# avoiding trailing space, which gcc fails on as a non-existent filename!):
+export XC_LFLAGS="-g${XC_LFLAGS:+ $XC_LFLAGS}"
 
 # Compile the package source, either as specified by the recipe or as usual:
 file_path="${RECIPE_DIR}/${pkg_mkpkg_cmd}"
