@@ -122,7 +122,10 @@ if match:
     buffer = buffer[:match.start()]
 
 # Make sure what goes before the "keep" ends with a new line (unless empty):
-sep  = '\n' if buffer.strip() else ''
+if buffer.strip():
+    sep  = '\n'
+else:
+    sep = ''
 buffer = re.compile('\n?\Z', flags=re.M).sub(sep, buffer)
 
 # Find the last entry in extern.pkg (if any) that matches the template:
@@ -155,7 +158,11 @@ if match:
         # Replace the entry by 2 separator lines (unless it's the first one):
         buf_before = buffer[:match.start()].rstrip()
         buf_after = buffer[match.end():].lstrip()
-        buffer = buf_before + ('\n\n' if buf_before else '') + buf_after
+        if buf_before:
+            sep = '\n\n'
+        else:
+            sep = ''
+        buffer = buf_before + sep + buf_after
         del buf_before, buf_after
         match = None
 
