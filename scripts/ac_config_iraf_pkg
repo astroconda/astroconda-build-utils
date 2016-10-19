@@ -9,11 +9,14 @@
 script_dir=`dirname "$0"`
 
 st=1
-unset name
+unset name remove flags
 while [ -n "$1" ]; do
     case "$1" in
 	-h)
             st=0; break
+            ;;
+        --remove)
+            remove=1
             ;;
         -*)
             st=1; break
@@ -30,9 +33,13 @@ while [ -n "$1" ]; do
 done
 
 if [ -n "$st" ]; then
-    echo "Usage: `basename "$0"` NAME  (normally invoked by \"conda install\")"
+    echo "Usage: `basename "$0"` [--remove] NAME "                 >&2
+    echo "  (normally invoked automatically by \"conda install\")" >&2
+    echo                                                           >&2
     exit $st
 fi
+
+[ -n "$remove" ] && flags="${flags}${flags:+ }--remove"
 
 # If the shell environment isn't configured by "conda install" as expected, try
 # falling back to Anaconda's run-time path variables to support user invocation.
@@ -61,7 +68,8 @@ fi
 # depending on other packages. Both the LSB and MacOS define Python in /usr/bin
 # as standard, avoiding any dependence on the state of the installation.
 
-if /usr/bin/python "$script_dir/ac_update_extern_pkg" "$PREFIX" "$name"; then
+if /usr/bin/python "$script_dir/ac_update_extern_pkg" $flags "$PREFIX" "$name"
+then
     if [ $inst = 1 ]; then
         echo "Updated extern.pkg file" >> "$PREFIX/.messages.txt"
     else

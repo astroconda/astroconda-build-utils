@@ -25,15 +25,21 @@ path_sub      = 'UR_VDIR'            # a regexp
 
 # Get command-line user arguments:
 usage = """
-Usage: ac_update_extern_pkg path name
+Usage: ac_update_extern_pkg [--remove] path name
 
 positional arguments:
   path        directory containing extern.pkg and iraf_extern/
   name        name of IRAF package (and its directory)
 """
-if len(sys.argv) != 3:
+argv = sys.argv
+if '--remove' in argv:
+    args_remove = True
+    argv.remove('--remove')
+else:
+    args_remove = False
+if len(argv) != 3 or argv[1].startswith('-') or argv[2].startswith('-'):
     sys.exit(usage)
-args_path, args_name = sys.argv[1:]
+args_path, args_name = argv[1:]
 
 
 # Convert to canonical path and ensure it exists, with an extern.pkg file and
@@ -127,12 +133,13 @@ for match in re.finditer(template_re, buffer, flags=re.M):
 # on the template, requiring that our new definition be moved to the end of the
 # file, to override the other defs. without actually losing the user's edits:
 if match:
+
     # The name of the path variable in our extern.pkg template entries must be
     # the name of the IRAF package, otherwise we would have to parse the actual
     # variable name from the template using these commented regexes and search
     # for that, instead of the package name itself, to find redefinitions:
     # pkgdef_re = '^[ \t]*task[ \t]+{0}[.]pkg[ \t]*=[ \t]*(.*)$'.format(name)
-    # pathvar_re = '["\']?(.*)[$].*[.]cl'  # find path variable name in pkg def.
+    # pathvar_re = '["\']?(.*)[$].*[.]cl' # find path variable name in pkg def.
     
     # Match any non-commented instances of the package name, in the remainder
     # of the buffer, that don't look like a substring of a longer name:
@@ -142,19 +149,21 @@ if match:
     # Where a later (user) definition is found, we still remove the last
     # template-based definition but then continue as if there had been no
     # match, so a new definition will get placed at the end of the file below:
-    if later_match:
+    if later_match or args_remove:
         buffer = '%s\n\n%s' % (buffer[:match.start()].rstrip(),
                                buffer[match.end():].lstrip())
         match = None
 
-# Replace the applicable entry with the template-based version:
-if match:
-    buffer = buffer[:match.start()] + tempbuf + buffer[match.end():]
+if not args_remove:
 
-# If there wasn't an existing entry, or the last one wasn't based on the
-# template, put the new entry at the end:
-else:
-    buffer += '%s\n\n' % tempbuf
+    # Replace the applicable entry with the template-based version:
+    if match:
+        buffer = buffer[:match.start()] + tempbuf + buffer[match.end():]
+
+    # If there wasn't an existing entry, or the last one wasn't based on the
+    # template, put the new entry at the end:
+    else:
+        buffer += '%s\n\n' % tempbuf
 
 # Restore the "keep" line at the end (along with a semicolon to avoid an IRAF
 # parser bug when the last entry ends with a curly bracket):
