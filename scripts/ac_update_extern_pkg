@@ -121,8 +121,9 @@ match = re.search(keep_re, buffer, flags=re.M)
 if match:
     buffer = buffer[:match.start()]
 
-# Make sure that what goes before the "keep" ends with a new line:
-buffer = re.compile('\n?\Z', flags=re.M).sub('\n', buffer)
+# Make sure what goes before the "keep" ends with a new line (unless empty):
+sep  = '\n' if buffer.strip() else ''
+buffer = re.compile('\n?\Z', flags=re.M).sub(sep, buffer)
 
 # Find the last entry in extern.pkg (if any) that matches the template:
 match = None
@@ -150,8 +151,12 @@ if match:
     # template-based definition but then continue as if there had been no
     # match, so a new definition will get placed at the end of the file below:
     if later_match or args_remove:
-        buffer = '%s\n\n%s' % (buffer[:match.start()].rstrip(),
-                               buffer[match.end():].lstrip())
+
+        # Replace the entry by 2 separator lines (unless it's the first one):
+        buf_before = buffer[:match.start()].rstrip()
+        buf_after = buffer[match.end():].lstrip()
+        buffer = buf_before + ('\n\n' if buf_before else '') + buf_after
+        del buf_before, buf_after
         match = None
 
 if not args_remove:
