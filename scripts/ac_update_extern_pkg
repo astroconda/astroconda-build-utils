@@ -42,24 +42,28 @@ if len(argv) != 3 or argv[1].startswith('-') or argv[2].startswith('-'):
 args_path, args_name = argv[1:]
 
 
-# Convert to canonical path and ensure it exists, with an extern.pkg file and
-# an iraf_extern/package/ur_extern.pkg (ie. files already installed):
+# Convert to canonical path and ensure it exists and is writeable, with an
+# iraf_extern/package/ur_extern.pkg (ie. files already installed):
 path = os.path.abspath(args_path)                     # env dir with extern.pkg
 extpkg_path = os.path.join(path, extern_pkg)          # extern.pkg path
 extbak_path = os.path.join(path, extpkg_bak)          # path to backup copy
 pkg_path = os.path.join(path, extern_dir, args_name)  # path to this IRAF pkg
 template_path = os.path.join(pkg_path, template)      # this ur_extern.pkg
 
-if not os.access(extpkg_path, os.R_OK | os.W_OK):
-    raise ValueError("cannot access %s" % (extpkg_path))
+if not os.access(path, os.W_OK):
+    raise ValueError("cannot write to %s" % (path))
 
 if not os.access(template_path, os.R_OK):
     raise ValueError("cannot access %s" % (template_path))
 
-# Read extern.pkg:
-extpkg_file = open(extpkg_path, 'r+')
-buffer = extpkg_file.read()
-extpkg_file.close()
+# Read extern.pkg (if there is one):
+if os.path.isfile(extpkg_path):
+    extpkg_file = open(extpkg_path, 'r')
+    buffer = extpkg_file.read()
+    extpkg_file.close()
+else:
+    buffer = ''
+    extbak_path = None
 
 # Read the package's template ur_extern.pkg, removing any outer blank lines:
 template_file = open(template_path, 'r')
@@ -182,7 +186,8 @@ if not args_remove:
 buffer += keep_str
 
 # Back up the original extern.pkg:
-os.rename(extpkg_path, extbak_path)
+if extbak_path:
+    os.rename(extpkg_path, extbak_path)
 
 # Write the modified extern.pkg as a new file with the same name, otherwise
 # conda's hard linking propagates its changes to other environments!:
@@ -191,5 +196,6 @@ extpkg_file.write(buffer)
 extpkg_file.close()
 
 # Inherit permissions from the original copy (just as good practice):
-shutil.copymode(extbak_path, extpkg_path)
+if extbak_path:
+    shutil.copymode(extbak_path, extpkg_path)
 

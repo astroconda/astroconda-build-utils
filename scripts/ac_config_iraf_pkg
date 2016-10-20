@@ -61,6 +61,9 @@ if [ ! -d "$PREFIX" -o ! -w "$PREFIX" ]; then
     exit 1
 fi
 
+# Create any new file with the expected permissions:
+umask 022
+
 # The Python script for updating extern.pkg must be invoked as follows because
 # (if directly executable) conda insists on changing its interpreter path to
 # one in the env that may not exist, since IRAF packages do not require python
