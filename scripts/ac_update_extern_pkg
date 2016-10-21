@@ -5,12 +5,14 @@
 # in progress when it gets run. It is not made executable because conda insists
 # on changing any Python interpreter path to $PREFIX/bin/python, which does not
 # always exist; it can instead be invoked via ac_config_iraf_pkg.
+#
+# Supporting ancient OS Python versions (v2.4 in RHE 5) means avoiding features
+# such as argparse, new-style string formatting, context managers etc.
 
-import argparse
+import sys
 import os, os.path
 import shutil
 import re
-from collections import OrderedDict
 
 
 # AstroConda naming conventions:
@@ -22,37 +24,51 @@ path_sub      = 'UR_VDIR'            # a regexp
 
 
 # Get command-line user arguments:
-parser = argparse.ArgumentParser()
+usage = """
+Usage: ac_update_extern_pkg [--remove] path name
 
-parser.add_argument('path', type=str,
-                    help='path to {0} and {1}/'.format(extern_pkg, extern_dir))
+positional arguments:
+  path        directory containing extern.pkg and iraf_extern/
+  name        name of IRAF package (and its directory)
+"""
+argv = sys.argv
+if '--remove' in argv:
+    args_remove = True
+    argv.remove('--remove')
+else:
+    args_remove = False
+if len(argv) != 3 or argv[1].startswith('-') or argv[2].startswith('-'):
+    sys.exit(usage)
+args_path, args_name = argv[1:]
 
-parser.add_argument('name', type=str,
-                    help='name of IRAF package (and its directory)')
 
-args = parser.parse_args()
-
-# Convert to canonical path and ensure it exists, with an extern.pkg file and
-# an iraf_extern/package/ur_extern.pkg (ie. files already installed):
-path = os.path.abspath(args.path)                     # env dir with extern.pkg
+# Convert to canonical path and ensure it exists and is writeable, with an
+# iraf_extern/package/ur_extern.pkg (ie. files already installed):
+path = os.path.abspath(args_path)                     # env dir with extern.pkg
 extpkg_path = os.path.join(path, extern_pkg)          # extern.pkg path
 extbak_path = os.path.join(path, extpkg_bak)          # path to backup copy
-pkg_path = os.path.join(path, extern_dir, args.name)  # path to this IRAF pkg
+pkg_path = os.path.join(path, extern_dir, args_name)  # path to this IRAF pkg
 template_path = os.path.join(pkg_path, template)      # this ur_extern.pkg
 
-if not os.access(extpkg_path, os.R_OK | os.W_OK):
-    raise ValueError("cannot access {0}".format(extpkg_path))
+if not os.access(path, os.W_OK):
+    raise ValueError("cannot write to %s" % (path))
 
 if not os.access(template_path, os.R_OK):
-    raise ValueError("cannot access {0}".format(template_path))
+    raise ValueError("cannot access %s" % (template_path))
 
-# Read extern.pkg:
-with open(extpkg_path, 'r+') as extpkg_file:
+# Read extern.pkg (if there is one):
+if os.path.isfile(extpkg_path):
+    extpkg_file = open(extpkg_path, 'r')
     buffer = extpkg_file.read()
+    extpkg_file.close()
+else:
+    buffer = ''
+    extbak_path = None
 
 # Read the package's template ur_extern.pkg, removing any outer blank lines:
-with open(template_path, 'r') as template_file:
-    tempbuf = template_file.read().strip()
+template_file = open(template_path, 'r')
+tempbuf = template_file.read().strip()
+template_file.close()
 
 # Here we convert the template entry to a regex for finding and removing old,
 # previously-generated entries for the same package. This mainly consists of
@@ -63,7 +79,7 @@ with open(template_path, 'r') as template_file:
 # because it's easier & more understandable to do those subs in concert with
 # the others. The template ur_extern.pkg files must not contain backslashes.
 
-replacements = OrderedDict((
+replacements = (
     ('special_nospace', (r'([][.^${}\|*?])',       r'\\\1')),
     ('special_sp_end',  (r'[ \t]*([=+()])[ \t]*$', r'[ \t]*\\\1')),
     ('special_space',   (r'[ \t]*([=+()])[ \t]*',  r'[ \t]*\\\1[ \t]*')),
@@ -72,7 +88,8 @@ replacements = OrderedDict((
     ('extra_space',     (r'[ \t]+',                r'[ \t]+')),
     ('line_space',      (r'\s*\n\s*',              r'\s*\n\s*')),  # see below
     ('path_sub',        (path_sub,                 r'.*')),
-))
+)
+repdict = dict(replacements) # keep both because no OrderedDict in python < 2.7
 
 # Note that ^ and $ only match in conjunction with their adjoining character,
 # which, unlike the \n above, can get consumed by a prior pattern. Also,
@@ -81,17 +98,17 @@ replacements = OrderedDict((
 
 # Concatenate individual expressions for replacement, so they can be done
 # simultaneously on the original buffer (otherwise they trip each other up):
-cat_re = '|'.join(['(?P<{0}>{1})'.format(key, regex) \
-                   for key, (regex, sub) in replacements.items()]) # py 3 way
+cat_re = '|'.join(['(?P<%s>%s)' % (key, regex) \
+                   for key, (regex, sub) in replacements])
 
 # Determine the replacement for a given match to the concatenated regex:
 def match_fn(match):
-    sub_re, sub = replacements[match.lastgroup]  # look up replacement tuple
+    sub_re, sub = repdict[match.lastgroup]       # look up replacement tuple
     return re.sub(sub_re, sub, match.group())    # do & return the substitution
 
 # Perform the substitutions to turn the template string into a regex itself:
 # template_re = re.escape(tempbuf) # if using built-in escape for special chars
-template_re = re.sub(cat_re, match_fn, tempbuf, flags=re.M)
+template_re = re.compile(cat_re, flags=re.M).sub(match_fn, tempbuf)
 
 # Update the original template entry with our new path:
 tempbuf = re.sub(path_sub, os.path.join(pkg_path, ''), tempbuf)  # trailing /
@@ -108,8 +125,12 @@ match = re.search(keep_re, buffer, flags=re.M)
 if match:
     buffer = buffer[:match.start()]
 
-# Make sure that what goes before the "keep" ends with a new line:
-buffer = re.sub('\n?\Z', '\n', buffer, flags=re.M)
+# Make sure what goes before the "keep" ends with a new line (unless empty):
+if buffer.strip():
+    sep  = '\n'
+else:
+    sep = ''
+buffer = re.compile('\n?\Z', flags=re.M).sub(sep, buffer)
 
 # Find the last entry in extern.pkg (if any) that matches the template:
 match = None
@@ -120,47 +141,61 @@ for match in re.finditer(template_re, buffer, flags=re.M):
 # on the template, requiring that our new definition be moved to the end of the
 # file, to override the other defs. without actually losing the user's edits:
 if match:
+
     # The name of the path variable in our extern.pkg template entries must be
     # the name of the IRAF package, otherwise we would have to parse the actual
     # variable name from the template using these commented regexes and search
     # for that, instead of the package name itself, to find redefinitions:
     # pkgdef_re = '^[ \t]*task[ \t]+{0}[.]pkg[ \t]*=[ \t]*(.*)$'.format(name)
-    # pathvar_re = '["\']?(.*)[$].*[.]cl'  # find path variable name in pkg def.
+    # pathvar_re = '["\']?(.*)[$].*[.]cl' # find path variable name in pkg def.
     
     # Match any non-commented instances of the package name, in the remainder
     # of the buffer, that don't look like a substring of a longer name:
-    pkgname_re = '^[^\n#]*(?<![A-z0-9_-]){0}(?![A-z0-9_-])'.format(args.name)
+    pkgname_re = '^[^\n#]*(?<![A-z0-9_-])%s(?![A-z0-9_-])' % (args_name)
     later_match = re.search(pkgname_re, buffer[match.end():], flags=re.M)
 
     # Where a later (user) definition is found, we still remove the last
     # template-based definition but then continue as if there had been no
     # match, so a new definition will get placed at the end of the file below:
-    if later_match:
-        buffer = '{0}\n\n{1}'.format(buffer[:match.start()].rstrip(),
-                                     buffer[match.end():].lstrip())
+    if later_match or args_remove:
+
+        # Replace the entry by 2 separator lines (unless it's the first one):
+        buf_before = buffer[:match.start()].rstrip()
+        buf_after = buffer[match.end():].lstrip()
+        if buf_before:
+            sep = '\n\n'
+        else:
+            sep = ''
+        buffer = buf_before + sep + buf_after
+        del buf_before, buf_after
         match = None
 
-# Replace the applicable entry with the template-based version:
-if match:
-    buffer = buffer[:match.start()] + tempbuf + buffer[match.end():]
+if not args_remove:
 
-# If there wasn't an existing entry, or the last one wasn't based on the
-# template, put the new entry at the end:
-else:
-    buffer += '{0}\n\n'.format(tempbuf)
+    # Replace the applicable entry with the template-based version:
+    if match:
+        buffer = buffer[:match.start()] + tempbuf + buffer[match.end():]
+
+    # If there wasn't an existing entry, or the last one wasn't based on the
+    # template, put the new entry at the end:
+    else:
+        buffer += '%s\n\n' % tempbuf
 
 # Restore the "keep" line at the end (along with a semicolon to avoid an IRAF
 # parser bug when the last entry ends with a curly bracket):
 buffer += keep_str
 
 # Back up the original extern.pkg:
-os.rename(extpkg_path, extbak_path)
+if extbak_path:
+    os.rename(extpkg_path, extbak_path)
 
 # Write the modified extern.pkg as a new file with the same name, otherwise
 # conda's hard linking propagates its changes to other environments!:
-with open(extpkg_path, 'w') as extpkg_file:
-    extpkg_file.write(buffer)
+extpkg_file = open(extpkg_path, 'w')
+extpkg_file.write(buffer)
+extpkg_file.close()
 
 # Inherit permissions from the original copy (just as good practice):
-shutil.copymode(extbak_path, extpkg_path)
+if extbak_path:
+    shutil.copymode(extbak_path, extpkg_path)
 
