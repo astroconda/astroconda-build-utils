@@ -92,6 +92,8 @@ rm -fr bin.*
 mkdir bin.generic "bin.$IRAFARCH"
 if [ -L bin ]; then  # apart from being safer, there is a bin/ dir in mscdb
     rm -f bin
+fi
+if [ ! -e bin ]; then 
     ln -s "bin.$IRAFARCH" bin
 fi
 
