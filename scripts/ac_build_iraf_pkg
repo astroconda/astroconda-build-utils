@@ -39,9 +39,9 @@ unset ARCH CFLAGS CXXFLAGS LDFLAGS MACOSX_DEPLOYMENT_TARGET
 # Create any new dirs & files with the expected permissions:
 umask 022
 
-# Strip any "iraf." from the Conda package name, to get the IRAF equivalent
+# Strip any "iraf." from the Conda package name, to get the IRAF equivalent,
 # and determine the installation path accordingly:
-pkg_name=`echo "$PKG_NAME" | sed -e 's|^iraf[.]||'`
+pkg_name=`echo "$PKG_NAME" | sed -e 's|^iraf[.]||' -e 's|^pyraf[.]||'`
 pkg_path="${PREFIX}/${extern_dir}/${pkg_name}"
 
 # Create the destination directory, if needed:
