@@ -52,9 +52,6 @@ if [ -z "$PREFIX" ]; then
         echo "ERROR: conda environment not configured (source activate?)" >&2
         exit 1
     fi
-    inst=0  # report success to user
-else
-    inst=1  # report success to "conda install" via hidden file convention
 fi
 if [ ! -d "$PREFIX" -o ! -w "$PREFIX" ]; then
     echo "ERROR: cannot write to directory $PREFIX" >&2
@@ -71,15 +68,9 @@ umask 022
 # depending on other packages. Both the LSB and MacOS define Python in /usr/bin
 # as standard, avoiding any dependence on the state of the installation.
 
-if /usr/bin/python "$script_dir/ac_update_extern_pkg" $flags "$PREFIX" "$name"
-then
-    if [ $inst = 1 ]; then
-        echo "Updated extern.pkg file" >> "$PREFIX/.messages.txt"
-    else
-        echo "Updated extern.pkg file"
-    fi
-else
-    echo "ERROR: failed to update extern.pkg" >&2
+if ! /usr/bin/python "$script_dir/ac_update_extern_pkg" $flags \
+                     "$PREFIX" "$name"; then
+    echo "ERROR: failed to update extern.pkg for $name" >&2
     exit 1
 fi
 
