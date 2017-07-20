@@ -97,6 +97,9 @@ if [ ! -e bin ]; then
     ln -s "bin.$IRAFARCH" bin
 fi
 
+# Remove any old libs that might cause linking complications (& links to them):
+find . \( -name ".a" -o -name "*.o" \) -exec rm -f {} \;
+
 # Enable compilation with debugging symbols (from the STScI IRAF "make_all";
 # avoiding trailing space, which gcc fails on as a non-existent filename!):
 export XC_LFLAGS="-g${XC_LFLAGS:+ $XC_LFLAGS}"
