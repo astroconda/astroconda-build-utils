@@ -34,7 +34,7 @@ if [ -z "$iraf" -o -z "$IRAFARCH" ]; then
 fi
 
 # These conda-set variables could interfere with building IRAF packages:
-unset ARCH CFLAGS CXXFLAGS LDFLAGS MACOSX_DEPLOYMENT_TARGET
+unset ARCH CFLAGS CXXFLAGS LDFLAGS LD_RUN_PATH MACOSX_DEPLOYMENT_TARGET
 
 # Create any new dirs & files with the expected permissions:
 umask 022
