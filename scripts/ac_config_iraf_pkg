@@ -61,15 +61,27 @@ fi
 # Create any new file with the expected permissions:
 umask 022
 
+# Both the LSB and MacOS define Python in /usr/bin as standard, avoiding any
+# dependence on the state of the installation. This does not always exist on
+# some OSs like Ubuntu, however, so try a couple of other known possibilities
+# and default to whatever "python" is found in the PATH if even those fail.
+for PYTHON in /usr/bin/python /usr/bin/python2 /usr/bin/python3 python; do
+    [ -x "$PYTHON" ] && break
+done
+if [ "$PYTHON" = "python" ]; then
+    if ! $PYTHON -c "pass"; then
+        echo "ERROR: cannot execute python (for IRAF package $name)" >&2
+        exit 1
+    fi
+fi
+
 # The Python script for updating extern.pkg must be invoked as follows because
 # (if directly executable) conda insists on changing its interpreter path to
 # one in the env that may not exist, since IRAF packages do not require python
 # :-(. The conda build docs also explicitly disallow post-install scripts from
-# depending on other packages. Both the LSB and MacOS define Python in /usr/bin
-# as standard, avoiding any dependence on the state of the installation.
+# depending on other packages.
 
-if ! /usr/bin/python "$script_dir/ac_update_extern_pkg" $flags \
-                     "$PREFIX" "$name"; then
+if ! $PYTHON "$script_dir/ac_update_extern_pkg" $flags "$PREFIX" "$name"; then
     echo "ERROR: failed to update extern.pkg for $name" >&2
     exit 1
 fi
