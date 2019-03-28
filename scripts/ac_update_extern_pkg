@@ -1,4 +1,4 @@
-# Copyright(c) 2016 Association of Universities for Research in Astronomy, Inc.
+# Copyright(c) 2016-2019 Association of Universities for Research in Astronomy, Inc.
 
 # This script uses the OS Python (both the LSB and MacOS define Python in
 # /usr/bin as standard), avoiding dependence on the installation that is still
@@ -86,7 +86,7 @@ replacements = (
     ('lead_space',      (r'^[ \t]+',               r'')),
     ('end_space',       (r'[ \t]+$',               r'')),
     ('extra_space',     (r'[ \t]+',                r'[ \t]+')),
-    ('line_space',      (r'\s*\n\s*',              r'\s*\n\s*')),  # see below
+    ('line_space',      (r'\s*\n\s*',              r'\\s*\n\\s*')), # see below
     ('path_sub',        (path_sub,                 r'.*')),
 )
 repdict = dict(replacements) # keep both because no OrderedDict in python < 2.7
@@ -127,10 +127,13 @@ if match:
 
 # Make sure what goes before the "keep" ends with a new line (unless empty):
 if buffer.strip():
-    sep  = '\n'
+    sep = '\n'
 else:
     sep = ''
-buffer = re.compile('\n?\Z', flags=re.M).sub(sep, buffer)
+if buffer.endswith('\n'):
+    buffer = buffer[:-1] + sep
+else:
+    buffer += sep
 
 # Find the last entry in extern.pkg (if any) that matches the template:
 match = None
